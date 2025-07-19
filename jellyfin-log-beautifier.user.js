@@ -1,11 +1,15 @@
 // ==UserScript==
 // @name         Jellyfin 日志美化 + 双筛选菜单（含模块排序和行数）
-// @namespace    http://tampermonkey.net/
+// @namespace    https://github.com/banned2054/jellyfin-log-beautifier
 // @version      1.0
 // @description  美化 Jellyfin 日志并支持“等级+模块”双筛选，模块名按字母排序并附带行数
 // @match        http://127.0.0.1:8096/System/Logs/Log?name=log_*
 // @icon         https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRzrq2XhIw7in73q4tTa6PTaQRO6KxAJ_XLZwgrZ7i8pkYdoJBk2NMUMBuqal72A0YyAbo&usqp=CAU
 // @author       banned
+// @homepageURL  https://github.com/banned2054/jellyfin-log-beautifier
+// @supportURL   https://github.com/banned2054/jellyfin-log-beautifier/issues
+// @updateURL    https://raw.githubusercontent.com/banned2054/jellyfin-log-beautifier/main/jellyfin-log-beautifier.user.js
+// @downloadURL  https://raw.githubusercontent.com/banned2054/jellyfin-log-beautifier/main/jellyfin-log-beautifier.user.js
 // @grant        none
 // ==/UserScript==
 
