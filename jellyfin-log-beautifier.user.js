@@ -146,7 +146,14 @@
   .jlb-td-msg .quoted {
     color: var(--accent);
     font-weight: 500;
+  }  
+  
+  /* message 内数字/IP 高亮 */
+  .jlb-td-msg .num {
+    color: #B5CEA8;
+    font-weight: 500;
   }
+
   `;
     document.head.appendChild(style);
 
@@ -185,13 +192,13 @@
 
     // ---------- 等级映射 ----------
     const levelMap = {
-        '[INF]': { text: '信息', color: '#569CD6' },
-        '[WRN]': { text: '警告', color: '#DCDCAA' },
-        '[ERR]': { text: '错误', color: '#F44747' },
-        '[DBG]': { text: '调试', color: '#B5CEA8' },
-        '[TRC]': { text: '追踪', color: '#9CDCFE' },
-        '[FTL]': { text: '严重', color: '#F44747' },
-        'UNKNOWN': { text: '无', color: '#808080' }
+        '[INF]': {text: '信息', color: '#569CD6'},
+        '[WRN]': {text: '警告', color: '#DCDCAA'},
+        '[ERR]': {text: '错误', color: '#F44747'},
+        '[DBG]': {text: '调试', color: '#B5CEA8'},
+        '[TRC]': {text: '追踪', color: '#9CDCFE'},
+        '[FTL]': {text: '严重', color: '#F44747'},
+        'UNKNOWN': {text: '无', color: '#808080'}
     };
 
     const rows = [];
@@ -216,7 +223,7 @@
         const timeStr = datetime.slice(11, 19);
 
         const levelKey = `[${levelTag}]`;
-        const { text: levelText, color: levelColor } = levelMap[levelKey] || levelMap['UNKNOWN'];
+        const {text: levelText, color: levelColor} = levelMap[levelKey] || levelMap['UNKNOWN'];
         levelSet.add(levelText);
 
         let module = fullMsg;
@@ -251,7 +258,18 @@
         const tdMsg = document.createElement('td');
         tdMsg.className = 'jlb-td-msg';
         const escaped = escapeHTML(message);
-        tdMsg.innerHTML = escaped.replace(/"([^"\n]+)"/g, '<span class="quoted">"$1"</span>');
+        tdMsg.innerHTML = escaped.replace(
+            /"([^"\n]+)"|(^|[^\w.])(\d+(?:\.\d+)*)(?=$|[^\w.])/g,
+            (m, quoted, prefix, number) => {
+                if (quoted) {
+                    // 命中 "……"：仅给引号内容上色
+                    return `<span class="quoted">"${quoted}"</span>`;
+                }
+                // 命中数字/IP：prefix 作为前导边界保留，数字包一层 num
+                return `${prefix}<span class="num">${number}</span>`;
+            }
+        );
+
 
         tr.appendChild(tdTime);
         tr.appendChild(tdLevel);
@@ -281,12 +299,12 @@
         if (dataKey === 'module') {
             sortedList = [...values.entries()]
                 .sort((a, b) => a[0].localeCompare(b[0], 'en'))
-                .map(([label, count]) => ({ label, count }));
+                .map(([label, count]) => ({label, count}));
         } else {
-            sortedList = [...values].sort().map(label => ({ label }));
+            sortedList = [...values].sort().map(label => ({label}));
         }
 
-        for (const { label, count } of sortedList) {
+        for (const {label, count} of sortedList) {
             const lab = document.createElement('label');
             const cb = document.createElement('input');
             cb.type = 'checkbox';
@@ -310,7 +328,7 @@
 
         box.appendChild(btn);
         box.appendChild(menu);
-        return { wrapper: box, checkboxes, dataKey };
+        return {wrapper: box, checkboxes, dataKey};
     }
 
     const levelPanel = createFilterPanel('等级', levelSet, 'level');
