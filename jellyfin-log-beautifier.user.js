@@ -211,10 +211,9 @@
     const moduleMap = new Map();
 
     // ---------- 安全转义 ----------
-    const escapeHTML = (s) =>
-        s.replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
+    const escapeHTML = (s) => s.replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 
     // ---------- 解析日志 ----------
     // 形如: [YYYY-mm-dd HH:MM:SS.xxx] [LVL] [pid] Module: message
@@ -264,30 +263,39 @@
         tdMsg.className = 'jlb-td-msg';
         const escaped = escapeHTML(message);
         tdMsg.innerHTML = escaped.replace(
-            /(?<!#)"([^"\n]+)"|(^|\s)(\d+(?:\.\d+)*)(?=\s|$)|(?<=\s)(#\S+)(?=\s)|(?<=\()(#[^)]*)(?=\))|(\d{1,2}\/\d{1,2}\/\d{4}\s+\d{1,2}:\d{2}:\d{2}\s*[AP]M)/g,
-            (m, quoted, prefix, number, hashSpace, hashParen, datetime) => {
+            /(?<!#)"([^"\n]+)"|(^|\s)(\d+(?:\.\d+)*)(?=\s|$)|(?<=\s)(#\S+)(?=\s)|(?<=\()(#[^)]*)(?=\))|(\d{1,2}\/\d{1,2}\/\d{4}\s+\d{1,2}:\d{2}:\d{2}\s*[AP]M)|((\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:\s*(?:Z|[+-]\d{2}:\d{2}))?)|(\b(\d{1,2}):(\d{2}):(\d{2})\.\d+\b)/gi,
+            (m, quoted, prefix, number, hashSpace, hashParen, usdt, isoFull, Y, M, D, h, m2, s2, timeFull, th, tm, ts) => {
+                const to2 = (n) => n.toString().padStart(2, "0");
+                const wrap = (v) => `<span class="num">${v}</span>`;
+
                 if (quoted) {
-                    // "……"
                     return `<span class="quoted">"${quoted}"</span>`;
                 }
                 if (number) {
-                    // 数字 / IP
                     return `${prefix}<span class="num">${number}</span>`;
                 }
                 if (hashSpace || hashParen) {
-                    // #token
                     const t = hashSpace || hashParen;
                     return `<span class="hash">${t}</span>`;
                 }
-                if (datetime) {
-                    // 日期时间 MM/DD/YYYY hh:mm:ss AM/PM → YYYY-MM-DD HH:mm:ss
-                    const [, M, D, Y, h, m2, s, ampm] =
-                        datetime.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})\s*([AP]M)/i);
-                    let hour = parseInt(h, 10);
-                    if (ampm.toUpperCase() === "PM" && hour !== 12) hour += 12;
-                    if (ampm.toUpperCase() === "AM" && hour === 12) hour = 0;
-                    const to2 = (n) => n.toString().padStart(2, "0");
-                    const formatted = `${Y}-${to2(M)}-${to2(D)} ${to2(hour)}:${m2}:${s}`;
+                if (usdt) {
+                    const [, MM, DD, YYYY, hh, mm, ss, ampm] =
+                        usdt.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})\s*([AP]M)/i);
+                    let H = parseInt(hh, 10);
+                    const A = ampm.toUpperCase();
+                    if (A === "PM" && H !== 12) H += 12;
+                    if (A === "AM" && H === 12) H = 0;
+                    const formatted = `${wrap(YYYY)}-${wrap(to2(MM))}-${wrap(to2(DD))} ${wrap(to2(H))}:${wrap(mm)}:${wrap(ss)}`;
+                    return `<span class="datetime">${formatted}</span>`;
+                }
+                if (isoFull) {
+                    // YYYY-MM-DD HH:mm:ss(.ffff…)? [Z|±HH:MM] -> 忽略时区/小数，只保留到秒
+                    const formatted = `${wrap(Y)}-${wrap(M)}-${wrap(D)} ${wrap(h)}:${wrap(m2)}:${wrap(s2)}`;
+                    return `<span class="datetime">${formatted}</span>`;
+                }
+                if (timeFull) {
+                    // HH:mm:ss.fffffff -> HH:mm:ss
+                    const formatted = `${wrap(to2(th))}:${wrap(tm)}:${wrap(ts)}`;
                     return `<span class="datetime">${formatted}</span>`;
                 }
                 return m;
