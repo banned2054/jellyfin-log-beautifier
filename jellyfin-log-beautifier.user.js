@@ -152,6 +152,11 @@
   .jlb-td-msg .num {
     color: #B5CEA8;
     font-weight: 500;
+  }  
+  
+  .jlb-td-msg .hash {
+    color: #4EC9B0;
+    font-weight: 500;
   }
 
   `;
@@ -259,14 +264,33 @@
         tdMsg.className = 'jlb-td-msg';
         const escaped = escapeHTML(message);
         tdMsg.innerHTML = escaped.replace(
-            /"([^"\n]+)"|(^|[^\w.])(\d+(?:\.\d+)*)(?=$|[^\w.])/g,
-            (m, quoted, prefix, number) => {
+            /(?<!#)"([^"\n]+)"|(^|\s)(\d+(?:\.\d+)*)(?=\s|$)|(?<=\s)(#\S+)(?=\s)|(?<=\()(#[^)]*)(?=\))|(\d{1,2}\/\d{1,2}\/\d{4}\s+\d{1,2}:\d{2}:\d{2}\s*[AP]M)/g,
+            (m, quoted, prefix, number, hashSpace, hashParen, datetime) => {
                 if (quoted) {
-                    // 命中 "……"：仅给引号内容上色
+                    // "……"
                     return `<span class="quoted">"${quoted}"</span>`;
                 }
-                // 命中数字/IP：prefix 作为前导边界保留，数字包一层 num
-                return `${prefix}<span class="num">${number}</span>`;
+                if (number) {
+                    // 数字 / IP
+                    return `${prefix}<span class="num">${number}</span>`;
+                }
+                if (hashSpace || hashParen) {
+                    // #token
+                    const t = hashSpace || hashParen;
+                    return `<span class="hash">${t}</span>`;
+                }
+                if (datetime) {
+                    // 日期时间 MM/DD/YYYY hh:mm:ss AM/PM → YYYY-MM-DD HH:mm:ss
+                    const [, M, D, Y, h, m2, s, ampm] =
+                        datetime.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})\s*([AP]M)/i);
+                    let hour = parseInt(h, 10);
+                    if (ampm.toUpperCase() === "PM" && hour !== 12) hour += 12;
+                    if (ampm.toUpperCase() === "AM" && hour === 12) hour = 0;
+                    const to2 = (n) => n.toString().padStart(2, "0");
+                    const formatted = `${Y}-${to2(M)}-${to2(D)} ${to2(hour)}:${m2}:${s}`;
+                    return `<span class="datetime">${formatted}</span>`;
+                }
+                return m;
             }
         );
 
